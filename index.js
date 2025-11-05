@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { getConnection, sql } = require('./db');
+const { initDatabase, getProductos, getProductoById, createProducto, updateProducto, deleteProducto } = require('./db');
 
 const app = express();
 const PORT = 3000;
@@ -13,7 +13,7 @@ app.use(express.json());
 async function initializeDatabase() {
   try {
     console.log('🔍 Inicializando conexión a la base de datos...');
-    const pool = await getConnection();
+    await initDatabase();
     console.log('✅ Aplicación lista para usar');
     return true;
   } catch (error) {
@@ -25,9 +25,8 @@ async function initializeDatabase() {
 // ✅ GET - Obtener todos los productos
 app.get('/api/inventory', async (req, res) => {
   try {
-    const pool = await getConnection();
-    const result = await pool.request().query('SELECT * FROM Inventory');
-    res.json(result.recordset);
+    const productos = await getProductos();
+    res.json(productos);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -38,18 +37,16 @@ app.post('/api/inventory', async (req, res) => {
   try {
     const { name, category, quantity, price } = req.body;
     
-    const pool = await getConnection();
-    await pool.request()
-      .input('name', sql.VarChar, name)
-      .input('category', sql.VarChar, category)
-      .input('quantity', sql.Int, quantity)
-      .input('price', sql.Decimal(10, 2), price)
-      .query(`
-        INSERT INTO Inventory (name, category, quantity, price) 
-        VALUES (@name, @category, @quantity, @price)
-      `);
+    const nuevoProducto = await createProducto({
+      nombre: name,
+      descripcion: '',
+      precio: price,
+      stock: quantity,
+      categoria: category,
+      imagen_url: ''
+    });
     
-    res.json({ success: true, message: 'Producto agregado correctamente' });
+    res.json({ success: true, message: 'Producto agregado correctamente', producto: nuevoProducto });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -61,20 +58,16 @@ app.put('/api/inventory/:id', async (req, res) => {
     const { id } = req.params;
     const { name, category, quantity, price } = req.body;
     
-    const pool = await getConnection();
-    await pool.request()
-      .input('id', sql.Int, id)
-      .input('name', sql.VarChar, name)
-      .input('category', sql.VarChar, category)
-      .input('quantity', sql.Int, quantity)
-      .input('price', sql.Decimal(10, 2), price)
-      .query(`
-        UPDATE Inventory 
-        SET name = @name, category = @category, quantity = @quantity, price = @price
-        WHERE id = @id
-      `);
+    const productoActualizado = await updateProducto(id, {
+      nombre: name,
+      descripcion: '',
+      precio: price,
+      stock: quantity,
+      categoria: category,
+      imagen_url: ''
+    });
     
-    res.json({ success: true, message: 'Producto actualizado correctamente' });
+    res.json({ success: true, message: 'Producto actualizado correctamente', producto: productoActualizado });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -85,12 +78,9 @@ app.delete('/api/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    const pool = await getConnection();
-    await pool.request()
-      .input('id', sql.Int, id)
-      .query('DELETE FROM Inventory WHERE id = @id');
+    const productoEliminado = await deleteProducto(id);
     
-    res.json({ success: true, message: 'Producto eliminado correctamente' });
+    res.json({ success: true, message: 'Producto eliminado correctamente', producto: productoEliminado });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
