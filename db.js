@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -53,6 +54,49 @@ async function initDatabase() {
 
   } catch (error) {
     console.error('❌ Error inicializando base de datos:', error.message);
+    throw error;
+  }
+}
+
+// Función para inicializar tabla de usuarios
+async function initUsuariosTable() {
+  try {
+    console.log('🔄 Inicializando tabla de usuarios...');
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        nombre VARCHAR(100) NOT NULL,
+        rol VARCHAR(20) DEFAULT 'cliente',
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        activo BOOLEAN DEFAULT true
+      )
+    `);
+
+    // Verificar si ya existe el usuario admin
+    const result = await pool.query('SELECT COUNT(*) FROM usuarios WHERE email = $1', ['admin@bodegaguadalupe.com']);
+    const count = parseInt(result.rows[0].count);
+
+    if (count === 0) {
+      console.log('📝 Insertando usuario administrador...');
+      
+      // Hash de password: Admin123
+      const passwordHash = await bcrypt.hash('Admin123', 10);
+      
+      await pool.query(
+        'INSERT INTO usuarios (email, password_hash, nombre, rol) VALUES ($1, $2, $3, $4)',
+        ['admin@bodegaguadalupe.com', passwordHash, 'Administrador', 'admin']
+      );
+      
+      console.log('✅ Usuario administrador creado correctamente');
+    } else {
+      console.log('✅ Tabla de usuarios ya inicializada');
+    }
+
+  } catch (error) {
+    console.error('❌ Error inicializando tabla de usuarios:', error.message);
     throw error;
   }
 }
@@ -120,6 +164,36 @@ async function deleteProducto(id) {
   }
 }
 
+// Función para buscar usuario por email
+async function findUserByEmail(email) {
+  try {
+    const result = await pool.query('SELECT * FROM usuarios WHERE email = $1 AND activo = true', [email]);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error buscando usuario:', error);
+    throw error;
+  }
+}
+
+// Función para crear nuevo usuario
+async function createUser(usuario) {
+  try {
+    const { email, password, nombre, rol = 'cliente' } = usuario;
+    
+    // Hash de la contraseña
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    const result = await pool.query(
+      'INSERT INTO usuarios (email, password_hash, nombre, rol) VALUES ($1, $2, $3, $4) RETURNING id, email, nombre, rol',
+      [email, passwordHash, nombre, rol]
+    );
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error creando usuario:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   pool,
   initDatabase,
@@ -127,5 +201,8 @@ module.exports = {
   getProductoById,
   createProducto,
   updateProducto,
-  deleteProducto
+  deleteProducto,
+  initUsuariosTable,
+  findUserByEmail,
+  createUser
 };
