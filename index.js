@@ -9,12 +9,12 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// ✅ Probar conexión al iniciar
+// Probar conexión al iniciar
 async function initializeDatabase() {
   try {
     console.log('🔍 Inicializando conexión a la base de datos...');
     await initDatabase();
-    console.log('✅ Aplicación lista para usar');
+    console.log('Aplicación lista para usar');
     return true;
   } catch (error) {
     console.log('❌ No se pudo inicializar la base de datos');
@@ -22,7 +22,7 @@ async function initializeDatabase() {
   }
 }
 
-// ✅ GET - Obtener todos los productos
+// GET - Obtener todos los productos
 app.get('/api/inventory', async (req, res) => {
   try {
     const productos = await getProductos();
@@ -32,7 +32,7 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
-// ✅ POST - Crear nuevo producto
+//  POST - Crear nuevo producto
 app.post('/api/inventory', async (req, res) => {
   try {
     const { name, category, quantity, price } = req.body;
@@ -52,7 +52,7 @@ app.post('/api/inventory', async (req, res) => {
   }
 });
 
-// ✅ PUT - Actualizar producto
+//  PUT - Actualizar producto
 app.put('/api/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -73,7 +73,7 @@ app.put('/api/inventory/:id', async (req, res) => {
   }
 });
 
-// ✅ DELETE - Eliminar producto
+// DELETE - Eliminar producto
 app.delete('/api/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
