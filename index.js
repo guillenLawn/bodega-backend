@@ -55,6 +55,15 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Middleware para verificar si es admin
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.rol === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({ error: 'Se requieren privilegios de administrador' });
+  }
+};
+
 // ✅ GET - Obtener todos los productos
 app.get('/api/inventory', async (req, res) => {
   try {
@@ -229,6 +238,213 @@ app.get('/api/auth/setup', async (req, res) => {
     res.json({ success: true, message: 'Tabla de usuarios inicializada correctamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== 🆕 ENDPOINT TEMPORAL PARA CREAR TABLAS DE PEDIDOS ====================
+app.post('/api/setup-pedidos-tables', async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    
+    console.log('🔧 Creando tablas de pedidos...');
+    
+    // Crear tabla pedidos
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pedidos (
+        id SERIAL PRIMARY KEY,
+        usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+        total DECIMAL(10,2) NOT NULL,
+        estado VARCHAR(20) DEFAULT 'completado',
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        direccion_entrega TEXT,
+        metodo_pago VARCHAR(50) DEFAULT 'efectivo',
+        notas TEXT
+      )
+    `);
+
+    // Crear tabla detalle_pedidos
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS detalle_pedidos (
+        id SERIAL PRIMARY KEY,
+        pedido_id INTEGER REFERENCES pedidos(id) ON DELETE CASCADE,
+        producto_id INTEGER REFERENCES productos(id),
+        producto_nombre VARCHAR(255) NOT NULL,
+        cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+        precio_unitario DECIMAL(10,2) NOT NULL,
+        subtotal DECIMAL(10,2) NOT NULL
+      )
+    `);
+
+    console.log('✅ Tablas de pedidos creadas exitosamente');
+    res.json({ 
+      success: true, 
+      message: 'Tablas de pedidos creadas exitosamente' 
+    });
+
+  } catch (error) {
+    console.error('❌ Error creando tablas:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al crear tablas: ' + error.message 
+    });
+  }
+});
+
+// ==================== 🆕 ENDPOINTS DE PEDIDOS ====================
+
+// POST - Crear nuevo pedido
+app.post('/api/pedidos', authenticateToken, async (req, res) => {
+  const { pool } = require('./db');
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    const usuarioId = req.user.id;
+    const { items, total, direccion, metodoPago } = req.body;
+
+    // 1. Crear pedido principal
+    const pedidoResult = await client.query(
+      `INSERT INTO pedidos (usuario_id, total, direccion_entrega, metodo_pago) 
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [usuarioId, total, direccion, metodoPago || 'efectivo']
+    );
+
+    const pedido = pedidoResult.rows[0];
+
+    // 2. Crear detalles del pedido y actualizar stock
+    for (const item of items) {
+      // Insertar detalle
+      await client.query(
+        `INSERT INTO detalle_pedidos (pedido_id, producto_id, producto_nombre, cantidad, precio_unitario, subtotal) 
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [pedido.id, item.id, item.nombre, item.cantidad, item.precio, item.precio * item.cantidad]
+      );
+
+      // Actualizar stock
+      await client.query(
+        'UPDATE productos SET stock = stock - $1 WHERE id = $2',
+        [item.cantidad, item.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Pedido creado exitosamente',
+      pedido: pedido
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error creando pedido:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al crear el pedido: ' + error.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// GET - Obtener pedidos del usuario logueado
+app.get('/api/pedidos/usuario', authenticateToken, async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    const usuarioId = req.user.id;
+    
+    const pedidosResult = await pool.query(`
+      SELECT p.*, 
+             json_agg(
+                 json_build_object(
+                     'producto_id', dp.producto_id,
+                     'producto_nombre', dp.producto_nombre,
+                     'cantidad', dp.cantidad,
+                     'precio_unitario', dp.precio_unitario,
+                     'subtotal', dp.subtotal
+                 )
+             ) as items
+      FROM pedidos p
+      LEFT JOIN detalle_pedidos dp ON p.id = dp.pedido_id
+      WHERE p.usuario_id = $1
+      GROUP BY p.id
+      ORDER BY p.fecha_creacion DESC
+    `, [usuarioId]);
+
+    res.json({
+      success: true,
+      pedidos: pedidosResult.rows
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo pedidos:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener pedidos: ' + error.message 
+    });
+  }
+});
+
+// GET - Obtener todos los pedidos (solo admin)
+app.get('/api/pedidos/admin', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    
+    const pedidosResult = await pool.query(`
+      SELECT p.*, u.nombre as usuario_nombre, u.email,
+             json_agg(
+                 json_build_object(
+                     'producto_id', dp.producto_id,
+                     'producto_nombre', dp.producto_nombre,
+                     'cantidad', dp.cantidad,
+                     'precio_unitario', dp.precio_unitario,
+                     'subtotal', dp.subtotal
+                 )
+             ) as items
+      FROM pedidos p
+      LEFT JOIN usuarios u ON p.usuario_id = u.id
+      LEFT JOIN detalle_pedidos dp ON p.id = dp.pedido_id
+      GROUP BY p.id, u.id
+      ORDER BY p.fecha_creacion DESC
+    `);
+
+    res.json({
+      success: true,
+      pedidos: pedidosResult.rows
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo todos los pedidos:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener pedidos: ' + error.message 
+    });
+  }
+});
+
+// PUT - Actualizar estado del pedido (solo admin)
+app.put('/api/pedidos/:id/estado', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    await pool.query(
+      'UPDATE pedidos SET estado = $1 WHERE id = $2',
+      [estado, id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Estado actualizado correctamente'
+    });
+
+  } catch (error) {
+    console.error('❌ Error actualizando estado:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al actualizar estado: ' + error.message 
+    });
   }
 });
 
