@@ -23,12 +23,45 @@ app.use(express.json());
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'bodega_guadalupe_secret_2024';
 
+// 🔧 CREAR USUARIO ADMIN POR DEFECTO AL INICIAR
+async function createDefaultAdmin() {
+  try {
+    const { pool } = require('./db');
+    
+    // Verificar si ya existe un admin
+    const adminCheck = await pool.query(
+      'SELECT id FROM usuarios WHERE rol = $1 LIMIT 1',
+      ['admin']
+    );
+    
+    if (adminCheck.rows.length === 0) {
+      console.log('👑 No hay administradores, creando uno por defecto...');
+      
+      const bcrypt = require('bcrypt');
+      const passwordHash = await bcrypt.hash('admin123', 10);
+      
+      await pool.query(
+        `INSERT INTO usuarios (email, password_hash, nombre, rol, activo) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        ['superadmin@bodega.com', passwordHash, 'Super Administrador', 'admin', true]
+      );
+      
+      console.log('✅ Usuario admin por defecto creado: superadmin@bodega.com / admin123');
+    } else {
+      console.log('✅ Ya existen administradores en el sistema');
+    }
+  } catch (error) {
+    console.log('⚠️ Error creando admin por defecto:', error.message);
+  }
+}
+
 // ✅ Probar conexión al iniciar
 async function initializeDatabase() {
   try {
     console.log('🔍 Inicializando conexión a la base de datos...');
     await initDatabase();
-    await initUsuariosTable(); // ← AÑADIR INICIALIZACIÓN DE USUARIOS
+    await initUsuariosTable();
+    await createDefaultAdmin(); // ← AGREGAR ESTA LÍNEA
     console.log('✅ Aplicación lista para usar');
     return true;
   } catch (error) {
@@ -144,7 +177,7 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
-    // Crear usuario
+    // Crear usuario (SIEMPRE como cliente)
     const nuevoUsuario = await createUser({ email, password, nombre });
     
     // Generar token
@@ -561,6 +594,57 @@ app.get('/api/debug/tablas', async (req, res) => {
       success: false, 
       error: error.message 
     });
+  }
+});
+
+// 🆕 ENDPOINT ESPECIAL PARA CREAR ADMIN FÁCIL
+app.post('/api/auth/create-admin-user', async (req, res) => {
+  try {
+    const { email = 'superadmin@bodega.com', password = 'admin123', nombre = 'Super Admin' } = req.body;
+
+    console.log('👑 Creando usuario administrador...');
+
+    // Crear usuario con rol admin
+    const nuevoUsuario = await createUser({ 
+      email, 
+      password, 
+      nombre,
+      rol: 'admin'
+    });
+    
+    // Generar token
+    const token = jwt.sign(
+      { 
+        id: nuevoUsuario.id, 
+        email: nuevoUsuario.email, 
+        rol: nuevoUsuario.rol 
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: '✅ Usuario ADMINISTRADOR creado exitosamente',
+      token,
+      user: {
+        id: nuevoUsuario.id,
+        email: nuevoUsuario.email,
+        nombre: nuevoUsuario.nombre,
+        rol: nuevoUsuario.rol
+      },
+      credentials: {
+        email: nuevoUsuario.email,
+        password: 'admin123'
+      }
+    });
+
+  } catch (error) {
+    if (error.code === '23505') {
+      res.status(400).json({ error: 'El email ya está registrado' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
