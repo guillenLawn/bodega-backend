@@ -386,12 +386,12 @@ app.get('/api/pedidos/usuario', authenticateToken, async (req, res) => {
 });
 
 // GET - Obtener todos los pedidos (solo admin)
-app.get('/api/pedidos/admin', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/pedidos/all', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { pool } = require('./db');
     
     const pedidosResult = await pool.query(`
-      SELECT p.*, u.nombre as usuario_nombre, u.email,
+      SELECT p.*, u.nombre as usuario_nombre, u.email as usuario_email,
              json_agg(
                  json_build_object(
                      'producto_id', dp.producto_id,
@@ -444,6 +444,60 @@ app.put('/api/pedidos/:id/estado', authenticateToken, requireAdmin, async (req, 
     res.status(500).json({ 
       success: false, 
       message: 'Error al actualizar estado: ' + error.message 
+    });
+  }
+});
+
+// ==================== 🆕 ENDPOINT DE ESTADÍSTICAS PARA ADMIN ====================
+
+// GET - Obtener estadísticas generales (solo admin)
+app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    
+    console.log('📊 Solicitando estadísticas para admin...');
+
+    // 1. Contar productos totales
+    const productosQuery = await pool.query('SELECT COUNT(*) as total FROM productos');
+    const totalProductos = parseInt(productosQuery.rows[0].total);
+
+    // 2. Contar pedidos totales
+    const pedidosQuery = await pool.query('SELECT COUNT(*) as total FROM pedidos');
+    const totalPedidos = parseInt(pedidosQuery.rows[0].total);
+
+    // 3. Contar usuarios totales
+    const usuariosQuery = await pool.query('SELECT COUNT(*) as total FROM usuarios');
+    const totalUsuarios = parseInt(usuariosQuery.rows[0].total);
+
+    // 4. Calcular ingresos totales (solo pedidos completados)
+    const ingresosQuery = await pool.query(
+      'SELECT COALESCE(SUM(total), 0) as total FROM pedidos WHERE estado = $1', 
+      ['completado']
+    );
+    const ingresosTotales = parseFloat(ingresosQuery.rows[0].total);
+
+    console.log('✅ Estadísticas calculadas:', {
+      totalProductos,
+      totalPedidos, 
+      totalUsuarios,
+      ingresosTotales
+    });
+
+    res.json({
+      success: true,
+      estadisticas: {
+        totalProductos,
+        totalPedidos,
+        totalUsuarios,
+        ingresosTotales
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener estadísticas: ' + error.message 
     });
   }
 });
