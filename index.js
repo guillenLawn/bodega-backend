@@ -502,6 +502,68 @@ app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
+// ==================== 🎯 ENDPOINT PARA VER TABLAS (DEBUG) ====================
+
+// GET - Ver todas las tablas y su estructura
+app.get('/api/debug/tablas', async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    
+    console.log('🔍 Obteniendo información de la base de datos...');
+    
+    // 1. Listar todas las tablas
+    const tablasQuery = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+    
+    const tablas = tablasQuery.rows.map(row => row.table_name);
+    console.log('📊 Tablas encontradas:', tablas);
+    
+    // 2. Para cada tabla, obtener información
+    const resultado = {};
+    
+    for (const tabla of tablas) {
+      // Contar registros
+      const countQuery = await pool.query(`SELECT COUNT(*) as total FROM "${tabla}"`);
+      const totalRegistros = countQuery.rows[0].total;
+      
+      // Obtener estructura de columnas
+      const columnasQuery = await pool.query(`
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns 
+        WHERE table_name = $1
+        ORDER BY ordinal_position
+      `, [tabla]);
+      
+      // Obtener algunos datos de ejemplo
+      const datosQuery = await pool.query(`SELECT * FROM "${tabla}" LIMIT 2`);
+      
+      resultado[tabla] = {
+        total_registros: parseInt(totalRegistros),
+        columnas: columnasQuery.rows,
+        datos_ejemplo: datosQuery.rows
+      };
+    }
+    
+    res.json({
+      success: true,
+      total_tablas: tablas.length,
+      nombres_tablas: tablas,
+      detalles: resultado
+    });
+    
+  } catch (error) {
+    console.error('Error obteniendo tablas:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Iniciar servidor
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
