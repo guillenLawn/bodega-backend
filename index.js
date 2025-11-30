@@ -648,6 +648,50 @@ app.post('/api/auth/create-admin-user', async (req, res) => {
   }
 });
 
+// ==================== 🆕 ENDPOINT PARA CONVERTIR USUARIO A ADMIN ====================
+
+// 🆕 ENDPOINT PARA CONVERTIR USUARIO EXISTENTE A ADMIN
+app.post('/api/auth/convert-to-admin', async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    const { email = 'admin@bodega.com' } = req.body;
+    
+    console.log('👑 Convirtiendo usuario a administrador:', email);
+    
+    // Actualizar rol a admin
+    const result = await pool.query(
+      `UPDATE usuarios SET rol = 'admin' WHERE email = $1 RETURNING id, email, nombre, rol`,
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Usuario no encontrado: ' + email 
+      });
+    }
+    
+    const usuario = result.rows[0];
+    
+    console.log('✅ Usuario convertido a admin:', usuario);
+    
+    res.json({
+      success: true,
+      message: '✅ Usuario convertido a ADMINISTRADOR exitosamente',
+      user: usuario
+    });
+    
+  } catch (error) {
+    console.error('❌ Error convirtiendo usuario:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ==================== FIN DE ENDPOINTS ====================
+
 // Iniciar servidor
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
