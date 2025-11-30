@@ -690,6 +690,56 @@ app.post('/api/auth/convert-to-admin', async (req, res) => {
   }
 });
 
+// ==================== 🆕 ENDPOINT PARA RESETEAR CONTRASEÑA DE ADMIN ====================
+
+app.post('/api/auth/reset-admin-password', async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    const bcrypt = require('bcrypt');
+    
+    console.log('🔧 Reseteando contraseña de admin...');
+    
+    // Nueva contraseña
+    const newPassword = 'admin123';
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    
+    // Actualizar contraseña del admin
+    const result = await pool.query(
+      `UPDATE usuarios SET password_hash = $1 WHERE email = $2 RETURNING id, email, nombre, rol`,
+      [passwordHash, 'admin@bodegaguadalupe.com']
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Admin no encontrado' });
+    }
+    
+    const usuario = result.rows[0];
+    
+    console.log('✅ Contraseña de admin actualizada');
+    
+    res.json({
+      success: true,
+      message: '✅ Contraseña de ADMIN actualizada exitosamente',
+      user: usuario,
+      new_credentials: {
+        email: 'admin@bodegaguadalupe.com',
+        password: 'admin123'
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== FIN DE ENDPOINTS ====================
+
+// Iniciar servidor
+app.listen(PORT, async () => {
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  await initializeDatabase();
+});
 // ==================== FIN DE ENDPOINTS ====================
 
 // Iniciar servidor
