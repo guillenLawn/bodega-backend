@@ -275,7 +275,7 @@ app.get('/api/auth/setup', async (req, res) => {
 });
 
 // ==================== 🆕 ENDPOINT TEMPORAL PARA CREAR TABLAS DE PEDIDOS ====================
-app.post('/api/setup-pedidos-tables', async (req, res) => {
+app.get('/api/setup-pedidos-tables', async (req, res) => {
   try {
     const { pool } = require('./db');
     
@@ -706,7 +706,7 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
     // Actualizar contraseña del admin
     const result = await pool.query(
       `UPDATE usuarios SET password_hash = $1 WHERE email = $2 RETURNING id, email, nombre, rol`,
-      [passwordHash, 'admin@bodegaguadalupe.com']
+      [passwordHash, 'admin@bodega.com']
     );
     
     if (result.rows.length === 0) {
@@ -722,7 +722,7 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
       message: '✅ Contraseña de ADMIN actualizada exitosamente',
       user: usuario,
       new_credentials: {
-        email: 'admin@bodegaguadalupe.com',
+        email: 'admin@bodega.com',
         password: 'admin123'
       }
     });
@@ -732,15 +732,6 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-// ==================== FIN DE ENDPOINTS ====================
-
-// Iniciar servidor
-app.listen(PORT, async () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  await initializeDatabase();
-});
-// ==================== FIN DE ENDPOINTS ====================
 
 // Iniciar servidor
 app.listen(PORT, async () => {
