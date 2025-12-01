@@ -14,7 +14,9 @@ const {
 } = require('./db');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// ✅ IMPORTANTE: Solo usar el puerto de Render
+const PORT = process.env.PORT;
 
 // Middlewares
 app.use(cors());
@@ -61,7 +63,7 @@ async function initializeDatabase() {
     console.log('🔍 Inicializando conexión a la base de datos...');
     await initDatabase();
     await initUsuariosTable();
-    await createDefaultAdmin(); // ← AGREGAR ESTA LÍNEA
+    await createDefaultAdmin();
     console.log('✅ Aplicación lista para usar');
     return true;
   } catch (error) {
@@ -97,6 +99,8 @@ const requireAdmin = (req, res, next) => {
   }
 };
 
+// ==================== ENDPOINTS PRINCIPALES ====================
+
 // ✅ GET - Obtener todos los productos
 app.get('/api/inventory', async (req, res) => {
   try {
@@ -108,7 +112,7 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 // ✅ POST - Crear nuevo producto
-app.post('/api/inventory', async (req, res) => {
+app.post('/api/inventory', authenticateToken, async (req, res) => {
   try {
     const { name, category, quantity, price } = req.body;
     
@@ -128,7 +132,7 @@ app.post('/api/inventory', async (req, res) => {
 });
 
 // ✅ PUT - Actualizar producto
-app.put('/api/inventory/:id', async (req, res) => {
+app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, category, quantity, price } = req.body;
@@ -149,7 +153,7 @@ app.put('/api/inventory/:id', async (req, res) => {
 });
 
 // ✅ DELETE - Eliminar producto
-app.delete('/api/inventory/:id', async (req, res) => {
+app.delete('/api/inventory/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -161,14 +165,13 @@ app.delete('/api/inventory/:id', async (req, res) => {
   }
 });
 
-// === ENDPOINTS DE AUTENTICACIÓN ===
+// ==================== AUTENTICACIÓN ====================
 
 // POST - Registro de usuario
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, nombre } = req.body;
 
-    // Validaciones
     if (!email || !password || !nombre) {
       return res.status(400).json({ error: 'Todos los campos son requeridos' });
     }
@@ -177,10 +180,8 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
-    // Crear usuario (SIEMPRE como cliente)
     const nuevoUsuario = await createUser({ email, password, nombre });
     
-    // Generar token
     const token = jwt.sign(
       { id: nuevoUsuario.id, email: nuevoUsuario.email, rol: nuevoUsuario.rol },
       JWT_SECRET,
@@ -200,7 +201,7 @@ app.post('/api/auth/register', async (req, res) => {
     });
 
   } catch (error) {
-    if (error.code === '23505') { // Violación de unique constraint
+    if (error.code === '23505') {
       res.status(400).json({ error: 'El email ya está registrado' });
     } else {
       res.status(500).json({ error: error.message });
@@ -217,14 +218,12 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Email y contraseña son requeridos' });
     }
 
-    // Buscar usuario
     const usuario = await findUserByEmail(email);
 
     if (!usuario) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Verificar contraseña
     const bcrypt = require('bcrypt');
     const validPassword = await bcrypt.compare(password, usuario.password_hash);
 
@@ -232,7 +231,6 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Generar token
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, rol: usuario.rol },
       JWT_SECRET,
@@ -264,7 +262,7 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
   });
 });
 
-// GET - Endpoint temporal para inicializar tabla de usuarios
+// GET - Inicializar tabla de usuarios
 app.get('/api/auth/setup', async (req, res) => {
   try {
     await initUsuariosTable();
@@ -274,14 +272,14 @@ app.get('/api/auth/setup', async (req, res) => {
   }
 });
 
-// ==================== 🆕 ENDPOINT TEMPORAL PARA CREAR TABLAS DE PEDIDOS ====================
+// ==================== TABLAS DE PEDIDOS ====================
+
 app.get('/api/setup-pedidos-tables', async (req, res) => {
   try {
     const { pool } = require('./db');
     
     console.log('🔧 Creando tablas de pedidos...');
     
-    // Crear tabla pedidos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS pedidos (
         id SERIAL PRIMARY KEY,
@@ -295,7 +293,6 @@ app.get('/api/setup-pedidos-tables', async (req, res) => {
       )
     `);
 
-    // Crear tabla detalle_pedidos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS detalle_pedidos (
         id SERIAL PRIMARY KEY,
@@ -323,9 +320,8 @@ app.get('/api/setup-pedidos-tables', async (req, res) => {
   }
 });
 
-// ==================== 🆕 ENDPOINTS DE PEDIDOS ====================
+// ==================== ENDPOINTS DE PEDIDOS ====================
 
-// POST - Crear nuevo pedido
 app.post('/api/pedidos', authenticateToken, async (req, res) => {
   const { pool } = require('./db');
   const client = await pool.connect();
@@ -335,7 +331,6 @@ app.post('/api/pedidos', authenticateToken, async (req, res) => {
     const usuarioId = req.user.id;
     const { items, total, direccion, metodoPago } = req.body;
 
-    // 1. Crear pedido principal
     const pedidoResult = await client.query(
       `INSERT INTO pedidos (usuario_id, total, direccion_entrega, metodo_pago) 
        VALUES ($1, $2, $3, $4) RETURNING *`,
@@ -344,16 +339,13 @@ app.post('/api/pedidos', authenticateToken, async (req, res) => {
 
     const pedido = pedidoResult.rows[0];
 
-    // 2. Crear detalles del pedido y actualizar stock
     for (const item of items) {
-      // Insertar detalle
       await client.query(
         `INSERT INTO detalle_pedidos (pedido_id, producto_id, producto_nombre, cantidad, precio_unitario, subtotal) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [pedido.id, item.id, item.nombre, item.cantidad, item.precio, item.precio * item.cantidad]
       );
 
-      // Actualizar stock
       await client.query(
         'UPDATE productos SET stock = stock - $1 WHERE id = $2',
         [item.cantidad, item.id]
@@ -380,7 +372,6 @@ app.post('/api/pedidos', authenticateToken, async (req, res) => {
   }
 });
 
-// GET - Obtener pedidos del usuario logueado
 app.get('/api/pedidos/usuario', authenticateToken, async (req, res) => {
   try {
     const { pool } = require('./db');
@@ -418,7 +409,6 @@ app.get('/api/pedidos/usuario', authenticateToken, async (req, res) => {
   }
 });
 
-// GET - Obtener todos los pedidos (solo admin)
 app.get('/api/pedidos/all', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { pool } = require('./db');
@@ -455,7 +445,6 @@ app.get('/api/pedidos/all', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
-// PUT - Actualizar estado del pedido (solo admin)
 app.put('/api/pedidos/:id/estado', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { pool } = require('./db');
@@ -481,28 +470,23 @@ app.put('/api/pedidos/:id/estado', authenticateToken, requireAdmin, async (req, 
   }
 });
 
-// ==================== 🆕 ENDPOINT DE ESTADÍSTICAS PARA ADMIN ====================
+// ==================== ESTADÍSTICAS ====================
 
-// GET - Obtener estadísticas generales (solo admin)
 app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { pool } = require('./db');
     
     console.log('📊 Solicitando estadísticas para admin...');
 
-    // 1. Contar productos totales
     const productosQuery = await pool.query('SELECT COUNT(*) as total FROM productos');
     const totalProductos = parseInt(productosQuery.rows[0].total);
 
-    // 2. Contar pedidos totales
     const pedidosQuery = await pool.query('SELECT COUNT(*) as total FROM pedidos');
     const totalPedidos = parseInt(pedidosQuery.rows[0].total);
 
-    // 3. Contar usuarios totales
     const usuariosQuery = await pool.query('SELECT COUNT(*) as total FROM usuarios');
     const totalUsuarios = parseInt(usuariosQuery.rows[0].total);
 
-    // 4. Calcular ingresos totales (solo pedidos completados)
     const ingresosQuery = await pool.query(
       'SELECT COALESCE(SUM(total), 0) as total FROM pedidos WHERE estado = $1', 
       ['completado']
@@ -535,16 +519,14 @@ app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
-// ==================== 🎯 ENDPOINT PARA VER TABLAS (DEBUG) ====================
+// ==================== DEBUG ====================
 
-// GET - Ver todas las tablas y su estructura
 app.get('/api/debug/tablas', async (req, res) => {
   try {
     const { pool } = require('./db');
     
     console.log('🔍 Obteniendo información de la base de datos...');
     
-    // 1. Listar todas las tablas
     const tablasQuery = await pool.query(`
       SELECT table_name 
       FROM information_schema.tables 
@@ -555,15 +537,12 @@ app.get('/api/debug/tablas', async (req, res) => {
     const tablas = tablasQuery.rows.map(row => row.table_name);
     console.log('📊 Tablas encontradas:', tablas);
     
-    // 2. Para cada tabla, obtener información
     const resultado = {};
     
     for (const tabla of tablas) {
-      // Contar registros
       const countQuery = await pool.query(`SELECT COUNT(*) as total FROM "${tabla}"`);
       const totalRegistros = countQuery.rows[0].total;
       
-      // Obtener estructura de columnas
       const columnasQuery = await pool.query(`
         SELECT column_name, data_type, is_nullable
         FROM information_schema.columns 
@@ -571,7 +550,6 @@ app.get('/api/debug/tablas', async (req, res) => {
         ORDER BY ordinal_position
       `, [tabla]);
       
-      // Obtener algunos datos de ejemplo
       const datosQuery = await pool.query(`SELECT * FROM "${tabla}" LIMIT 2`);
       
       resultado[tabla] = {
@@ -597,14 +575,14 @@ app.get('/api/debug/tablas', async (req, res) => {
   }
 });
 
-// 🆕 ENDPOINT ESPECIAL PARA CREAR ADMIN FÁCIL
+// ==================== ADMIN MANAGEMENT ====================
+
 app.post('/api/auth/create-admin-user', async (req, res) => {
   try {
     const { email = 'superadmin@bodega.com', password = 'admin123', nombre = 'Super Admin' } = req.body;
 
     console.log('👑 Creando usuario administrador...');
 
-    // Crear usuario con rol admin
     const nuevoUsuario = await createUser({ 
       email, 
       password, 
@@ -612,7 +590,6 @@ app.post('/api/auth/create-admin-user', async (req, res) => {
       rol: 'admin'
     });
     
-    // Generar token
     const token = jwt.sign(
       { 
         id: nuevoUsuario.id, 
@@ -648,9 +625,6 @@ app.post('/api/auth/create-admin-user', async (req, res) => {
   }
 });
 
-// ==================== 🆕 ENDPOINT PARA CONVERTIR USUARIO A ADMIN ====================
-
-// 🆕 ENDPOINT PARA CONVERTIR USUARIO EXISTENTE A ADMIN
 app.post('/api/auth/convert-to-admin', async (req, res) => {
   try {
     const { pool } = require('./db');
@@ -658,7 +632,6 @@ app.post('/api/auth/convert-to-admin', async (req, res) => {
     
     console.log('👑 Convirtiendo usuario a administrador:', email);
     
-    // Actualizar rol a admin
     const result = await pool.query(
       `UPDATE usuarios SET rol = 'admin' WHERE email = $1 RETURNING id, email, nombre, rol`,
       [email]
@@ -690,8 +663,6 @@ app.post('/api/auth/convert-to-admin', async (req, res) => {
   }
 });
 
-// ==================== 🆕 ENDPOINT PARA RESETEAR CONTRASEÑA DE ADMIN ====================
-
 app.post('/api/auth/reset-admin-password', async (req, res) => {
   try {
     const { pool } = require('./db');
@@ -699,11 +670,9 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
     
     console.log('🔧 Reseteando contraseña de admin...');
     
-    // Nueva contraseña
     const newPassword = 'admin123';
     const passwordHash = await bcrypt.hash(newPassword, 10);
     
-    // Actualizar contraseña del admin
     const result = await pool.query(
       `UPDATE usuarios SET password_hash = $1 WHERE email = $2 RETURNING id, email, nombre, rol`,
       [passwordHash, 'admin@bodega.com']
@@ -733,7 +702,7 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
   }
 });
 
-// ==================== 🆕 ENDPOINT PARA REINICIAR PRODUCTOS (32 productos) ====================
+// ==================== 🆕 ENDPOINT PARA REINICIAR PRODUCTOS ====================
 
 app.post('/api/reset-productos', async (req, res) => {
   try {
@@ -741,10 +710,8 @@ app.post('/api/reset-productos', async (req, res) => {
     
     console.log('🔄 Reiniciando tabla de productos...');
     
-    // 1. Eliminar todos los productos existentes
     await pool.query('DELETE FROM productos');
     
-    // 2. Insertar los 32 NUEVOS productos (los que tienes en db.js)
     await pool.query(`
       INSERT INTO productos (nombre, descripcion, precio, stock, categoria, imagen_url) VALUES
       ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 4.50, 100, 'Abarrotes', 'https://example.com/arroz.jpg'),
@@ -798,13 +765,13 @@ app.post('/api/reset-productos', async (req, res) => {
   }
 });
 
-// Iniciar servidor
-app.listen(PORT, async () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  await initializeDatabase();
-});
-// Iniciar servidor
-app.listen(PORT, async () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  await initializeDatabase();
-});
+// ==================== INICIAR SERVIDOR ====================
+
+if (PORT) {
+  app.listen(PORT, async () => {
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    await initializeDatabase();
+  });
+} else {
+  console.error('❌ ERROR: No se especificó el puerto en process.env.PORT');
+}
