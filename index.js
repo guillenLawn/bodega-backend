@@ -702,70 +702,82 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
   }
 });
 
-// ==================== 🆕 ENDPOINT PARA REINICIAR PRODUCTOS ====================
+// ==================== 🆕 ENDPOINT PARA REINICIAR PRODUCTOS (CORREGIDO) ====================
 
-app.post('/api/reset-productos', async (req, res) => {
+app.post('/api/reset-productos', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { pool } = require('./db');
     
-    console.log('🔄 Reiniciando tabla de productos...');
+    console.log('🔄 Reiniciando productos desde db.js...');
     
-    // ✅ 1. PRIMERO eliminar detalle_pedidos
+    // 1. Eliminar en orden (para evitar errores de FK)
     await pool.query('DELETE FROM detalle_pedidos');
-    
-    // ✅ 2. LUEGO eliminar pedidos  
     await pool.query('DELETE FROM pedidos');
-    
-    // ✅ 3. FINALMENTE eliminar productos
     await pool.query('DELETE FROM productos');
     
-    // ✅ 4. Insertar los 32 NUEVOS productos  
-    await pool.query(`
-      INSERT INTO productos (nombre, descripcion, precio, stock, categoria, imagen_url) VALUES
-      ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 4.50, 100, 'Abarrotes', 'https://example.com/arroz.jpg'),
-      ('Aceite Primor Vegetal', 'Aceite vegetal 1L', 12.80, 50, 'Aceites', 'https://example.com/aceite.jpg'),
-      ('Atún Florida en Aceite', 'Lata de atún en aceite 170g', 6.50, 80, 'Conservas', 'https://example.com/atun.jpg'),
-      ('Fideos Don Vittorio Tallarín', 'Fideo tallarín 400g', 3.20, 120, 'Pastas', 'https://example.com/fideos.jpg'),
-      ('Leche Gloria Evaporada', 'Leche evaporada 400g', 4.80, 60, 'Lácteos', 'https://example.com/leche.jpg'),
-      ('Azúcar Rubia Blanca', 'Azúcar blanca 1kg', 3.80, 90, 'Abarrotes', 'https://example.com/azucar.jpg'),
-      ('Café Altomayo Instantáneo', 'Café instantáneo 50g', 8.90, 70, 'Bebidas', 'https://example.com/cafe.jpg'),
-      ('Harina Blanca Flor', 'Harina de trigo 1kg', 3.50, 85, 'Abarrotes', 'https://example.com/harina.jpg'),
-      ('Huevos Rojos Grandes', 'Docena de huevos rojos grandes', 8.50, 75, 'Lácteos', 'https://example.com/huevos.jpg'),
-      ('Mantequilla Gloria', 'Mantequilla 250g', 7.50, 35, 'Lácteos', 'https://example.com/mantequilla.jpg'),
-      ('Yogurt Gloria Natural', 'Yogurt natural 1L', 6.80, 40, 'Lácteos', 'https://example.com/yogurt.jpg'),
-      ('Gaseosa Inca Kola', 'Gaseosa 1.5L', 5.50, 70, 'Bebidas', 'https://example.com/incakola.jpg'),
-      ('Agua Cielo Sin Gas', 'Agua mineral 2L', 3.20, 100, 'Bebidas', 'https://example.com/agua.jpg'),
-      ('Jugo Pulp Naranja', 'Jugo de naranja 1L', 4.80, 50, 'Bebidas', 'https://example.com/jugo.jpg'),
-      ('Detergente Bolívar', 'Detergente en polvo 1kg', 8.50, 40, 'Limpieza', 'https://example.com/detergente.jpg'),
-      ('Jabón Líquido Ace', 'Jabón líquido 500ml', 6.80, 55, 'Limpieza', 'https://example.com/jabon.jpg'),
-      ('Lavavajillas Sapolio', 'Lavavajillas 500ml', 5.20, 45, 'Limpieza', 'https://example.com/lavavajillas.jpg'),
-      ('Papel Higiénico Elite', 'Papel higiénico 4 rollos', 7.80, 65, 'Limpieza', 'https://example.com/papel.jpg'),
-      ('Sardina en Salsa de Tomate', 'Sardina en lata 125g', 4.20, 60, 'Conservas', 'https://example.com/sardina.jpg'),
-      ('Pan de Molde Bimbo', 'Pan de molde 600g', 8.50, 30, 'Abarrotes', 'https://example.com/pan.jpg'),
-      ('Galletas Soda Field', 'Galletas soda 400g', 4.50, 70, 'Abarrotes', 'https://example.com/galletas.jpg'),
-      ('Mermelada Gloria Durazno', 'Mermelada de durazno 500g', 6.80, 40, 'Abarrotes', 'https://example.com/mermelada.jpg'),
-      ('Sal de Mesa Finita', 'Sal fina de mesa 1kg', 2.00, 85, 'Abarrotes', 'https://example.com/sal.jpg'),
-      ('Vinagre Blanco', 'Vinagre alcohol blanco 500ml', 2.80, 60, 'Abarrotes', 'https://example.com/vinagre.jpg'),
-      ('Chocolate Bon o Bon', 'Chocolate relleno 24 unidades', 12.50, 40, 'Abarrotes', 'https://example.com/bonobon.jpg'),
-      ('Maíz Pira para Palomitas', 'Maíz pira para hacer canchita 200g', 3.50, 55, 'Abarrotes', 'https://example.com/maiz_pira.jpg'),
-      ('Ajinómino', 'Sillao botella 200ml', 4.50, 45, 'Abarrotes', 'https://example.com/sillao.jpg'),
-      ('Caldo de Gallina Maggi', 'Caldo de gallina 12 cubos', 3.80, 60, 'Abarrotes', 'https://example.com/caldo.jpg'),
-      ('Lentejas Partidas', 'Lentejas partidas 500g', 4.20, 40, 'Abarrotes', 'https://example.com/lentejas.jpg'),
-      ('Garbanzos Secos', 'Garbanzos secos 500g', 5.50, 35, 'Abarrotes', 'https://example.com/garbanzos.jpg'),
-      ('Avena Molida', 'Avena molida 400g', 3.80, 50, 'Abarrotes', 'https://example.com/avena.jpg'),
-      ('Menestrón en Sobres', 'Menestrón en sobres 80g', 2.50, 70, 'Abarrotes', 'https://example.com/menestron.jpg')
-    `);
+    // 2. Resetear secuencias
+    await pool.query('ALTER SEQUENCE productos_id_seq RESTART WITH 1');
+    await pool.query('ALTER SEQUENCE pedidos_id_seq RESTART WITH 1');
+    await pool.query('ALTER SEQUENCE detalle_pedidos_id_seq RESTART WITH 1');
     
-    console.log('✅ 32 productos insertados correctamente');
+    // 3. ✅ IMPORTANTE: Usar initDatabase() que YA tiene los 32 productos actualizados en db.js
+    await initDatabase();
+    
+    console.log('✅ 32 productos insertados correctamente desde db.js');
     
     res.json({
       success: true,
-      message: '32 productos insertados correctamente',
+      message: '32 productos reseteados correctamente desde db.js',
       total_productos: 32
     });
     
   } catch (error) {
     console.error('❌ Error reiniciando productos:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ==================== 🆕 REINICIO NUCLEAR (OPCIONAL) ====================
+
+app.post('/api/nuclear-reset', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { pool } = require('./db');
+    
+    console.log('☢️ REINICIO NUCLEAR de la base de datos...');
+    
+    // 1. Eliminar todas las tablas en orden
+    await pool.query('DROP TABLE IF EXISTS detalle_pedidos CASCADE');
+    await pool.query('DROP TABLE IF EXISTS pedidos CASCADE');
+    await pool.query('DROP TABLE IF EXISTS productos CASCADE');
+    await pool.query('DROP TABLE IF EXISTS usuarios CASCADE');
+    
+    console.log('✅ Tablas eliminadas');
+    
+    // 2. Volver a crear TODO desde cero usando db.js
+    await initDatabase(); // Esto creará productos con las URLs ACTUALIZADAS de db.js
+    await initUsuariosTable();
+    
+    // 3. Crear admin
+    const bcrypt = require('bcrypt');
+    const passwordHash = await bcrypt.hash('admin123', 10);
+    await pool.query(
+      `INSERT INTO usuarios (email, password_hash, nombre, rol, activo) 
+       VALUES ($1, $2, $3, $4, $5)`,
+      ['admin@bodega.com', passwordHash, 'Administrador', 'admin', true]
+    );
+    
+    console.log('✅ Base de datos recreada con 32 productos ACTUALIZADOS desde db.js');
+    
+    res.json({
+      success: true,
+      message: '✅ Base de datos recreada completamente con URLs actualizadas desde db.js'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error nuclear:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
