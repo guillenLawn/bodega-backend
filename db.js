@@ -40,7 +40,7 @@ async function initDatabase() {
         ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 4.50, 100, 'Abarrotes', 'https://example.com/arroz.jpg'),
         ('Aceite Primor Vegetal', 'Aceite vegetal 1L', 12.80, 50, 'Aceites', 'https://example.com/aceite.jpg'),
         ('Atún Florida en Aceite', 'Lata de atún en aceite 170g', 6.50, 80, 'Conservas', 'https://example.com/atun.jpg'),
-        ('Fideos Don Vittorio Tallarín', 'Fideo tallarín 400g', 3.20, 120, 'Pastas', 'https://example.com/fideos.jpg'),
+        ('Fideos Don Vittorio Tallarín', 'Fideo tallarín 400g', 3.20, 120, 'Pastas', 'https://cdnx.jumpseller.com/carabela/image/60762221/Screen_Shot_2025-02-28_at_10.43.21.png?1740757524'),
         ('Leche Gloria Evaporada', 'Leche evaporada 400g', 4.80, 60, 'Lácteos', 'https://example.com/leche.jpg'),
         ('Azúcar Rubia Blanca', 'Azúcar blanca 1kg', 3.80, 90, 'Abarrotes', 'https://example.com/azucar.jpg'),
         ('Café Altomayo Instantáneo', 'Café instantáneo 50g', 8.90, 70, 'Bebidas', 'https://example.com/cafe.jpg'),
