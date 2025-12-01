@@ -100,7 +100,7 @@ async function initUsuariosTable() {
     `);
 
     // Verificar si ya existe el usuario admin
-    const result = await pool.query('SELECT COUNT(*) FROM usuarios WHERE email = $1', ['admin@bodegaguadalupe.com']);
+    const result = await pool.query('SELECT COUNT(*) FROM usuarios WHERE email = $1', ['admin@bodega.com']);
     const count = parseInt(result.rows[0].count);
 
     if (count === 0) {
@@ -111,7 +111,7 @@ async function initUsuariosTable() {
       
       await pool.query(
         'INSERT INTO usuarios (email, password_hash, nombre, rol) VALUES ($1, $2, $3, $4)',
-        ['admin@bodegaguadalupe.com', passwordHash, 'Administrador', 'admin']
+        ['admin@bodega.com', passwordHash, 'Administrador', 'admin']
       );
       
       console.log('✅ Usuario administrador creado correctamente');
