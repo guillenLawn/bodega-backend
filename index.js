@@ -710,8 +710,16 @@ app.post('/api/reset-productos', async (req, res) => {
     
     console.log('🔄 Reiniciando tabla de productos...');
     
+    // ✅ 1. PRIMERO eliminar detalle_pedidos
+    await pool.query('DELETE FROM detalle_pedidos');
+    
+    // ✅ 2. LUEGO eliminar pedidos  
+    await pool.query('DELETE FROM pedidos');
+    
+    // ✅ 3. FINALMENTE eliminar productos
     await pool.query('DELETE FROM productos');
     
+    // ✅ 4. Insertar los 32 NUEVOS productos  
     await pool.query(`
       INSERT INTO productos (nombre, descripcion, precio, stock, categoria, imagen_url) VALUES
       ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 4.50, 100, 'Abarrotes', 'https://example.com/arroz.jpg'),
