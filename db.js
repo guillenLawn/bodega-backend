@@ -37,7 +37,7 @@ async function initDatabase() {
       // Insertar datos de prueba para Bodega Guadalupe
       await pool.query(`
         INSERT INTO productos (nombre, descripcion, precio, stock, categoria, imagen_url) VALUES
-        ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 4.50, 100, 'Abarrotes', 'https://example.com/arroz.jpg'),
+        ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 4.50, 100, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764707064/433778_vzoxur.webp'),
         ('Aceite Primor Vegetal', 'Aceite vegetal 1L', 12.80, 50, 'Aceites', 'https://example.com/aceite.jpg'),
         ('Atún Florida en Aceite', 'Lata de atún en aceite 170g', 6.50, 80, 'Conservas', 'https://example.com/atun.jpg'),
         ('Fideos Don Vittorio Tallarín', 'Fideo tallarín 400g', 3.20, 120, 'Pastas', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764622446/fideos_don_vittorio_zi41xb.png'),
