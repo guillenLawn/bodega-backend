@@ -58,17 +58,17 @@ async function initDatabase() {
         ('Sardina en Salsa de Tomate', 'Sardina en lata 125g', 4.20, 60, 'Conservas', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764709745/Sardina_en_Salsa_de_Tomate_i9h6wc.jpg'),
         ('Pan de Molde Bimbo', 'Pan de molde 600g', 8.50, 30, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764709741/Pan_de_Molde_Bimbo_ww8gf6.webp'),
         ('Galletas Soda Field', 'Galletas soda 204g', 18, 70, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764709736/Galletas_Soda_Field_tppjoe.webp'),
-        ('Mermelada Gloria Durazno', 'Mermelada de durazno 500g', 6.80, 40, 'Abarrotes', 'https://example.com/mermelada.jpg'),
-        ('Sal de Mesa Finita', 'Sal fina de mesa 1kg', 2.00, 85, 'Abarrotes', 'https://example.com/sal.jpg'),
-        ('Vinagre Blanco', 'Vinagre alcohol blanco 500ml', 2.80, 60, 'Abarrotes', 'https://example.com/vinagre.jpg'),
-        ('Chocolate Bon o Bon', 'Chocolate relleno 24 unidades', 12.50, 40, 'Abarrotes', 'https://example.com/bonobon.jpg'),
-        ('Maíz Pira para Palomitas', 'Maíz pira para hacer canchita 200g', 3.50, 55, 'Abarrotes', 'https://example.com/maiz_pira.jpg'),
-        ('Ajinómino', 'Sillao botella 200ml', 4.50, 45, 'Abarrotes', 'https://example.com/sillao.jpg'),
-        ('Caldo de Gallina Maggi', 'Caldo de gallina 12 cubos', 3.80, 60, 'Abarrotes', 'https://example.com/caldo.jpg'),
-        ('Lentejas Partidas', 'Lentejas partidas 500g', 4.20, 40, 'Abarrotes', 'https://example.com/lentejas.jpg'),
-        ('Garbanzos Secos', 'Garbanzos secos 500g', 5.50, 35, 'Abarrotes', 'https://example.com/garbanzos.jpg'),
-        ('Avena Molida', 'Avena molida 400g', 3.80, 50, 'Abarrotes', 'https://example.com/avena.jpg'),
-        ('Menestrón en Sobres', 'Menestrón en sobres 80g', 2.50, 70, 'Abarrotes', 'https://example.com/menestron.jpg')
+        ('Mermelada Gloria Durazno', 'Mermelada de durazno 500g', 6.80, 40, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711511/Mermelada_Gloria_Durazno_sujzko.webp'),
+        ('Sal de Mesa', 'Sal fina de mesa 1kg', 2.00, 85, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711511/Sal_de_Mesa_dullnv.webp'),
+        ('Vinagre Blanco', 'Vinagre alcohol blanco 500ml', 2.80, 60, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711514/Vinagre_Blanco_nxgqah.jpg'),
+        ('Chocolate Bon o Bon', 'Chocolate relleno 24 unidades', 12.50, 40, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711504/Chocolate_Bon_o_Bon_ggth0s.webp'),
+        ('Maíz Pop Corn COSTEÑO', 'Maíz pira para hacer canchita 500g', 3.50, 55, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711510/Ma%C3%ADz_Pop_Corn_COSTE%C3%91O_sqrryp.jpg'),
+        ('Aji-no-sillao', 'Sillao botella 150ml', 4.50, 45, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711503/Ajin%C3%B3mino_wbdxi2.jpg'),
+        ('Caldo de Gallina Maggi', 'Caldo de gallina 26 un', 18, 60, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711503/Caldo_de_Gallina_Maggi_zryrub.webp'),
+        ('Lentejas Partidas', 'Lentejas partidas 500g', 4.20, 40, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711507/Lentejas_Partidas_s1gntw.webp'),
+        ('Garbanzos Secos', 'Garbanzos secos 500g', 5.50, 35, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711506/Garbanzos_Secos_plgqtq.webp'),
+        ('Avena Molida', 'Avena molida 400g', 3.80, 50, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711503/Avena_Molida_xxcez5.jpg'),
+        ('Menestrón en Sobres', 'Menestrón en sobres 55g', 2.50, 70, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711511/Menestr%C3%B3n_en_Sobres_ukmj8w.webp')
       `);
       
       console.log('✅ Datos de prueba insertados correctamente');
