@@ -38,11 +38,11 @@ async function initDatabase() {
       await pool.query(`
         INSERT INTO productos (nombre, descripcion, precio, stock, categoria, imagen_url) VALUES
         ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 4.50, 100, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764707064/433778_vzoxur.webp'),
-        ('Aceite Primor Vegetal', 'Aceite vegetal 1L', 12.80, 50, 'Aceites', 'https://example.com/aceite.jpg'),
-        ('Atún Florida en Aceite', 'Lata de atún en aceite 170g', 6.50, 80, 'Conservas', 'https://example.com/atun.jpg'),
+        ('Aceite Primor Vegetal', 'Aceite vegetal 1L', 12.80, 50, 'Aceites', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764707820/Aceite_Primor_Vegetal_sddu5q.webp'),
+        ('Atún Florida en Aceite', 'Lata de atún en aceite 170g', 6.50, 80, 'Conservas', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764707920/At%C3%BAn_Florida_en_Aceite_sz6i4j.jpg'),
         ('Fideos Don Vittorio Tallarín', 'Fideo tallarín 400g', 3.20, 120, 'Pastas', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764622446/fideos_don_vittorio_zi41xb.png'),
-        ('Leche Gloria Evaporada', 'Leche evaporada 400g', 4.80, 60, 'Lácteos', 'https://example.com/leche.jpg'),
-        ('Azúcar Rubia Blanca', 'Azúcar blanca 1kg', 3.80, 90, 'Abarrotes', 'https://example.com/azucar.jpg'),
+        ('Leche Gloria Evaporada', 'Leche evaporada 400g', 4.80, 60, 'Lácteos', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764708001/Leche_Gloria_Evaporada_ewhy7c.webp'),
+        ('Azúcar Rubia Blanca', 'Azúcar blanca 1kg', 3.80, 90, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764708090/Az%C3%BAcar_Rubia_Blanca_fxxrjc.jpg'),
         ('Café Altomayo Instantáneo', 'Café instantáneo 50g', 8.90, 70, 'Bebidas', 'https://example.com/cafe.jpg'),
         ('Harina Blanca Flor', 'Harina de trigo 1kg', 3.50, 85, 'Abarrotes', 'https://example.com/harina.jpg'),
         ('Huevos Rojos Grandes', 'Docena de huevos rojos grandes', 8.50, 75, 'Lácteos', 'https://example.com/huevos.jpg'),
