@@ -10,7 +10,8 @@ const {
   deleteProducto,
   initUsuariosTable,
   findUserByEmail,
-  createUser 
+  createUser,
+  migrarDatosViejosANuevos  // 🔧 NUEVO: Importar función de migración
 } = require('./db');
 
 const app = express();
@@ -64,6 +65,10 @@ async function initializeDatabase() {
     await initDatabase();
     await initUsuariosTable();
     await createDefaultAdmin();
+    
+    // 🔧 NUEVO: Ejecutar migración de datos viejos a nuevos campos
+    await migrarDatosViejosANuevos();
+    
     console.log('✅ Aplicación lista para usar');
     return true;
   } catch (error) {
@@ -101,7 +106,7 @@ const requireAdmin = (req, res, next) => {
 
 // ==================== ENDPOINTS PRINCIPALES ====================
 
-// ✅ GET - Obtener todos los productos
+// ✅ GET - Obtener todos los productos (NUEVO: Incluye campos completos)
 app.get('/api/inventory', async (req, res) => {
   try {
     const productos = await getProductos();
@@ -111,42 +116,102 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
-// ✅ POST - Crear nuevo producto
+// ✅ 🔧 NUEVO: GET - Obtener producto por ID con todos los detalles
+app.get('/api/inventory/:id/detalles', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const producto = await getProductoById(id);
+    
+    if (!producto) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    
+    res.json({
+      success: true,
+      producto: producto
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ✅ POST - Crear nuevo producto (ACTUALIZADO: Campos completos)
 app.post('/api/inventory', authenticateToken, async (req, res) => {
   try {
-    const { name, category, quantity, price } = req.body;
+    const { 
+      nombre, 
+      descripcion, 
+      descripcion_larga, 
+      precio, 
+      stock, 
+      categoria, 
+      imagen_url,
+      marca,
+      peso,
+      unidad_medida 
+    } = req.body;
     
     const nuevoProducto = await createProducto({
-      nombre: name,
-      descripcion: '',
-      precio: price,
-      stock: quantity,
-      categoria: category,
-      imagen_url: ''
+      nombre,
+      descripcion: descripcion || '',
+      descripcion_larga: descripcion_larga || descripcion || '',
+      precio,
+      stock,
+      categoria,
+      imagen_url: imagen_url || '',
+      marca: marca || 'Varios',
+      peso: peso || '1',
+      unidad_medida: unidad_medida || 'unidad'
     });
     
-    res.json({ success: true, message: 'Producto agregado correctamente', producto: nuevoProducto });
+    res.json({ 
+      success: true, 
+      message: 'Producto agregado correctamente', 
+      producto: nuevoProducto 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ✅ PUT - Actualizar producto
+// ✅ PUT - Actualizar producto (ACTUALIZADO: Campos completos)
 app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, category, quantity, price } = req.body;
+    const { 
+      nombre, 
+      descripcion, 
+      descripcion_larga, 
+      precio, 
+      stock, 
+      categoria, 
+      imagen_url,
+      marca,
+      peso,
+      unidad_medida 
+    } = req.body;
     
     const productoActualizado = await updateProducto(id, {
-      nombre: name,
-      descripcion: '',
-      precio: price,
-      stock: quantity,
-      categoria: category,
-      imagen_url: ''
+      nombre,
+      descripcion: descripcion || '',
+      descripcion_larga: descripcion_larga || descripcion || '',
+      precio,
+      stock,
+      categoria,
+      imagen_url: imagen_url || '',
+      marca: marca || 'Varios',
+      peso: peso || '1',
+      unidad_medida: unidad_medida || 'unidad'
     });
     
-    res.json({ success: true, message: 'Producto actualizado correctamente', producto: productoActualizado });
+    res.json({ 
+      success: true, 
+      message: 'Producto actualizado correctamente', 
+      producto: productoActualizado 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -159,7 +224,11 @@ app.delete('/api/inventory/:id', authenticateToken, async (req, res) => {
     
     const productoEliminado = await deleteProducto(id);
     
-    res.json({ success: true, message: 'Producto eliminado correctamente', producto: productoEliminado });
+    res.json({ 
+      success: true, 
+      message: 'Producto eliminado correctamente', 
+      producto: productoEliminado 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -778,6 +847,56 @@ app.post('/api/nuclear-reset', authenticateToken, requireAdmin, async (req, res)
     
   } catch (error) {
     console.error('❌ Error nuclear:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ==================== NUEVO ENDPOINT PARA VISTA DETALLE ====================
+
+// 🔧 NUEVO: Endpoint específico para vista detalle
+app.get('/api/productos/:id/detalle-completo', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`🔍 Solicitando detalles completos del producto ID: ${id}`);
+    
+    const producto = await getProductoById(id);
+    
+    if (!producto) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Producto no encontrado' 
+      });
+    }
+    
+    // 🔧 Asegurar que todos los campos existan (compatibilidad hacia atrás)
+    const productoCompleto = {
+      id: producto.id,
+      nombre: producto.nombre || '',
+      descripcion: producto.descripcion || '',
+      descripcion_larga: producto.descripcion_larga || producto.descripcion || 'Descripción no disponible',
+      precio: producto.precio || 0,
+      stock: producto.stock || 0,
+      categoria: producto.categoria || 'Sin categoría',
+      imagen_url: producto.imagen_url || '',
+      marca: producto.marca || 'Varios',
+      peso: producto.peso || '1',
+      unidad_medida: producto.unidad_medida || 'unidad',
+      created_at: producto.created_at
+    };
+    
+    console.log(`✅ Detalles completos enviados para: ${productoCompleto.nombre}`);
+    
+    res.json({
+      success: true,
+      producto: productoCompleto
+    });
+    
+  } catch (error) {
+    console.error('❌ Error obteniendo detalles del producto:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
