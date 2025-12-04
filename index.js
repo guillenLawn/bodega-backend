@@ -138,83 +138,86 @@ app.get('/api/inventory/:id/detalles', async (req, res) => {
   }
 });
 
-// ✅ POST - Crear nuevo producto (ACTUALIZADO: Campos completos)
+// ✅ POST - Crear nuevo producto (CORREGIDO: Solo campos existentes)
 app.post('/api/inventory', authenticateToken, async (req, res) => {
-  try {
-    const { 
-      nombre, 
-      descripcion, 
-      descripcion_larga, 
-      precio, 
-      stock, 
-      categoria, 
-      imagen_url,
-      marca,
-      peso,
-      unidad_medida 
-    } = req.body;
-    
-    const nuevoProducto = await createProducto({
-      nombre,
-      descripcion: descripcion || '',
-      descripcion_larga: descripcion_larga || descripcion || '',
-      precio,
-      stock,
-      categoria,
-      imagen_url: imagen_url || '',
-      marca: marca || 'Varios',
-      peso: peso || '1',
-      unidad_medida: unidad_medida || 'unidad'
-    });
-    
-    res.json({ 
-      success: true, 
-      message: 'Producto agregado correctamente', 
-      producto: nuevoProducto 
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+    try {
+        const { 
+            nombre, 
+            descripcion = '', 
+            precio, 
+            stock, 
+            categoria, 
+            imagen_url = ''
+        } = req.body;
+        
+        console.log('➕ Creando nuevo producto:', { nombre, precio, stock, categoria });
+        
+        // ✅ Solo campos que EXISTEN en la tabla
+        const nuevoProducto = await createProducto({
+            nombre,
+            descripcion,
+            precio,
+            stock,
+            categoria,
+            imagen_url
+            // ❌ NO incluir: descripcion_larga, marca, peso, unidad_medida
+        });
+        
+        console.log('✅ Producto creado:', nuevoProducto);
+        
+        res.json({ 
+            success: true, 
+            message: 'Producto agregado correctamente', 
+            producto: nuevoProducto 
+        });
+    } catch (error) {
+        console.error('❌ Error creando producto:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
-// ✅ PUT - Actualizar producto (ACTUALIZADO: Campos completos)
+// ✅ PUT - Actualizar producto (CORREGIDO: Solo campos existentes)
 app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { 
-      nombre, 
-      descripcion, 
-      descripcion_larga, 
-      precio, 
-      stock, 
-      categoria, 
-      imagen_url,
-      marca,
-      peso,
-      unidad_medida 
-    } = req.body;
-    
-    const productoActualizado = await updateProducto(id, {
-      nombre,
-      descripcion: descripcion || '',
-      descripcion_larga: descripcion_larga || descripcion || '',
-      precio,
-      stock,
-      categoria,
-      imagen_url: imagen_url || '',
-      marca: marca || 'Varios',
-      peso: peso || '1',
-      unidad_medida: unidad_medida || 'unidad'
-    });
-    
-    res.json({ 
-      success: true, 
-      message: 'Producto actualizado correctamente', 
-      producto: productoActualizado 
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+    try {
+        const { id } = req.params;
+        const { 
+            nombre, 
+            descripcion, 
+            precio, 
+            stock, 
+            categoria, 
+            imagen_url 
+        } = req.body;
+        
+        console.log('📝 Actualizando producto ID:', id);
+        console.log('📦 Datos recibidos:', req.body);
+        
+        // ✅ Solo usar campos que EXISTEN en la tabla (8 campos)
+        const productoActualizado = await updateProducto(id, {
+            nombre: nombre,
+            descripcion: descripcion || '',
+            precio: precio,
+            stock: stock,
+            categoria: categoria,
+            imagen_url: imagen_url || ''
+            // ❌ NO incluir: descripcion_larga, marca, peso, unidad_medida
+        });
+        
+        console.log('✅ Producto actualizado:', productoActualizado);
+        
+        res.json({ 
+            success: true, 
+            message: 'Producto actualizado correctamente', 
+            producto: productoActualizado 
+        });
+        
+    } catch (error) {
+        console.error('❌ Error actualizando producto:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
 });
 
 // ✅ DELETE - Eliminar producto
