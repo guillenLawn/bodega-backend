@@ -204,31 +204,35 @@ async function getProductoById(id) {
 }
 
 async function createProducto(producto) {
-  try {
-    const { nombre, descripcion, descripcion_larga, precio, stock, categoria, imagen_url, marca, peso, unidad_medida } = producto;
-    const result = await pool.query(
-      'INSERT INTO productos (nombre, descripcion, descripcion_larga, precio, stock, categoria, imagen_url, marca, peso, unidad_medida) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-      [nombre, descripcion, descripcion_larga, precio, stock, categoria, imagen_url, marca, peso, unidad_medida]
-    );
-    return result.rows[0];
-  } catch (error) {
-    console.error('Error creando producto:', error);
-    throw error;
-  }
+    try {
+        const { nombre, descripcion, precio, stock, categoria, imagen_url } = producto;
+        
+        const result = await pool.query(
+            'INSERT INTO productos (nombre, descripcion, precio, stock, categoria, imagen_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [nombre, descripcion, precio, stock, categoria, imagen_url]
+        );
+        
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error creando producto:', error);
+        throw error;
+    }
 }
 
 async function updateProducto(id, producto) {
-  try {
-    const { nombre, descripcion, descripcion_larga, precio, stock, categoria, imagen_url, marca, peso, unidad_medida } = producto;
-    const result = await pool.query(
-      'UPDATE productos SET nombre = $1, descripcion = $2, descripcion_larga = $3, precio = $4, stock = $5, categoria = $6, imagen_url = $7, marca = $8, peso = $9, unidad_medida = $10 WHERE id = $11 RETURNING *',
-      [nombre, descripcion, descripcion_larga, precio, stock, categoria, imagen_url, marca, peso, unidad_medida, id]
-    );
-    return result.rows[0];
-  } catch (error) {
-    console.error('Error actualizando producto:', error);
-    throw error;
-  }
+    try {
+        const { nombre, descripcion, precio, stock, categoria, imagen_url } = producto;
+        
+        const result = await pool.query(
+            'UPDATE productos SET nombre = $1, descripcion = $2, precio = $3, stock = $4, categoria = $5, imagen_url = $6 WHERE id = $7 RETURNING *',
+            [nombre, descripcion, precio, stock, categoria, imagen_url, id]
+        );
+        
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error actualizando producto:', error);
+        throw error;
+    }
 }
 
 // 🔧 **FUNCIONES PARA MIGRACIÓN (mantener compatibilidad)**
