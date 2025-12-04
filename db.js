@@ -11,9 +11,9 @@ const pool = new Pool({
 // Función para inicializar la base de datos con datos de prueba
 async function initDatabase() {
   try {
-    console.log('🔄 Inicializando base de datos PostgreSQL...');
+    console.log(' Inicializando base de datos PostgreSQL...');
     
-    // 🔧 **CORREGIDO: Agregar nuevos campos para vista detalle**
+    //Agregar nuevos campos para vista detalle**
     await pool.query(`
       CREATE TABLE IF NOT EXISTS productos (
         id SERIAL PRIMARY KEY,
@@ -36,9 +36,9 @@ async function initDatabase() {
     const count = parseInt(result.rows[0].count);
 
     if (count === 0) {
-      console.log('📝 Insertando datos de prueba...');
+      console.log(' Insertando datos de prueba...');
       
-      // 🔧 **AGREGADO: Datos completos con descripción_larga, marca, peso, unidad_medida**
+      //Datos completos con descripción_larga, marca, peso, unidad_medida**
       await pool.query(`
         INSERT INTO productos (nombre, descripcion, descripcion_larga, precio, stock, categoria, imagen_url, marca, peso, unidad_medida) VALUES
         ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 
@@ -170,9 +170,9 @@ async function initDatabase() {
          2.50, 70, 'Abarrotes', 'https://res.cloudinary.com/dbptiljzk/image/upload/v1764711511/Menestr%C3%B3n_en_Sobres_ukmj8w.webp', 'Sopas Perú', '55', 'gramos')
       `);
       
-      console.log('✅ Datos completos insertados correctamente');
+      console.log(' Datos completos insertados correctamente');
     } else {
-      console.log('✅ Base de datos ya contiene datos');
+      console.log(' Base de datos ya contiene datos');
     }
 
   } catch (error) {
@@ -181,7 +181,7 @@ async function initDatabase() {
   }
 }
 
-// 🔧 **FUNCIONES ACTUALIZADAS para incluir nuevos campos**
+// FUNCIONES  para incluir nuevos campos**
 
 async function getProductos() {
   try {
@@ -235,10 +235,10 @@ async function updateProducto(id, producto) {
     }
 }
 
-// 🔧 **FUNCIONES PARA MIGRACIÓN (mantener compatibilidad)**
+// **FUNCIONES PARA MIGRACIÓN **
 async function migrarDatosViejosANuevos() {
   try {
-    console.log('🔄 Migrando datos a nuevos campos...');
+    console.log(' Migrando datos a nuevos campos...');
     
     // Actualizar registros que no tengan los nuevos campos completos
     await pool.query(`
@@ -270,13 +270,13 @@ async function migrarDatosViejosANuevos() {
       WHERE descripcion_larga IS NULL OR marca IS NULL
     `);
     
-    console.log('✅ Datos migrados correctamente');
+    console.log(' Datos migrados correctamente');
   } catch (error) {
-    console.warn('⚠️ Advertencia en migración:', error.message);
+    console.warn(' Advertencia en migración:', error.message);
   }
 }
 
-// Función para inicializar tabla de usuarios (SIN CAMBIOS)
+// Función para inicializar tabla de usuarios 
 async function initUsuariosTable() {
   try {
     console.log('🔄 Inicializando tabla de usuarios...');
@@ -298,7 +298,7 @@ async function initUsuariosTable() {
     const count = parseInt(result.rows[0].count);
 
     if (count === 0) {
-      console.log('📝 Insertando usuario administrador...');
+      console.log(' Insertando usuario administrador...');
       
       // Hash de password: Admin123
       const passwordHash = await bcrypt.hash('Admin123', 10);
@@ -308,13 +308,13 @@ async function initUsuariosTable() {
         ['admin@bodega.com', passwordHash, 'Administrador', 'admin']
       );
       
-      console.log('✅ Usuario administrador creado correctamente');
+      console.log(' Usuario administrador creado correctamente');
     } else {
-      console.log('✅ Tabla de usuarios ya inicializada');
+      console.log(' Tabla de usuarios ya inicializada');
     }
 
   } catch (error) {
-    console.error('❌ Error inicializando tabla de usuarios:', error.message);
+    console.error(' Error inicializando tabla de usuarios:', error.message);
     throw error;
   }
 }
@@ -368,5 +368,5 @@ module.exports = {
   initUsuariosTable,
   findUserByEmail,
   createUser,
-  migrarDatosViejosANuevos  // 🔧 Nueva función para migración
+  migrarDatosViejosANuevos  
 };
