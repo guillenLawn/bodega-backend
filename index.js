@@ -11,12 +11,12 @@ const {
   initUsuariosTable,
   findUserByEmail,
   createUser,
-  migrarDatosViejosANuevos  // 🔧 NUEVO: Importar función de migración
+  migrarDatosViejosANuevos  
 } = require('./db');
 
 const app = express();
 
-// ✅ IMPORTANTE: Solo usar el puerto de Render
+// Solo usa el puerto de Render
 const PORT = process.env.PORT;
 
 // Middlewares
@@ -26,12 +26,12 @@ app.use(express.json());
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'bodega_guadalupe_secret_2024';
 
-// 🔧 CREAR USUARIO ADMIN POR DEFECTO AL INICIAR
+// CREA USUARIO ADMIN POR DEFECTO AL INICIAR
 async function createDefaultAdmin() {
   try {
     const { pool } = require('./db');
     
-    // Verificar si ya existe un admin
+    // Verifica si ya existe un admin
     const adminCheck = await pool.query(
       'SELECT id FROM usuarios WHERE rol = $1 LIMIT 1',
       ['admin']
@@ -49,30 +49,30 @@ async function createDefaultAdmin() {
         ['superadmin@bodega.com', passwordHash, 'Super Administrador', 'admin', true]
       );
       
-      console.log('✅ Usuario admin por defecto creado: superadmin@bodega.com / admin123');
+      console.log(' Usuario admin por defecto creado: superadmin@bodega.com / admin123');
     } else {
-      console.log('✅ Ya existen administradores en el sistema');
+      console.log(' Ya existen administradores en el sistema');
     }
   } catch (error) {
-    console.log('⚠️ Error creando admin por defecto:', error.message);
+    console.log(' Error creando admin por defecto:', error.message);
   }
 }
 
-// ✅ Probar conexión al iniciar
+//  Probar conexión al iniciar
 async function initializeDatabase() {
   try {
-    console.log('🔍 Inicializando conexión a la base de datos...');
+    console.log(' Inicializando conexión a la base de datos...');
     await initDatabase();
     await initUsuariosTable();
     await createDefaultAdmin();
     
-    // 🔧 NUEVO: Ejecutar migración de datos viejos a nuevos campos
+    // Ejecutar migración de datos viejos a nuevos campos
     await migrarDatosViejosANuevos();
     
-    console.log('✅ Aplicación lista para usar');
+    console.log(' Aplicación lista para usar');
     return true;
   } catch (error) {
-    console.log('❌ No se pudo inicializar la base de datos');
+    console.log(' No se pudo inicializar la base de datos');
     return false;
   }
 }
@@ -106,7 +106,7 @@ const requireAdmin = (req, res, next) => {
 
 // ==================== ENDPOINTS PRINCIPALES ====================
 
-// ✅ GET - Obtener todos los productos (NUEVO: Incluye campos completos)
+//  GET - Obtener todos los productos (NUEVO: Incluye campos completos)
 app.get('/api/inventory', async (req, res) => {
   try {
     const productos = await getProductos();
@@ -116,7 +116,7 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
-// ✅ 🔧 NUEVO: GET - Obtener producto por ID con todos los detalles
+// GET - Obtener producto por ID con todos los detalles
 app.get('/api/inventory/:id/detalles', async (req, res) => {
   try {
     const { id } = req.params;
@@ -138,7 +138,7 @@ app.get('/api/inventory/:id/detalles', async (req, res) => {
   }
 });
 
-// ✅ POST - Crear nuevo producto (CORREGIDO: Solo campos existentes)
+//  POST - Crear nuevo producto (CORREGIDO: Solo campos existentes)
 app.post('/api/inventory', authenticateToken, async (req, res) => {
     try {
         const { 
@@ -152,7 +152,7 @@ app.post('/api/inventory', authenticateToken, async (req, res) => {
         
         console.log('➕ Creando nuevo producto:', { nombre, precio, stock, categoria });
         
-        // ✅ Solo campos que EXISTEN en la tabla
+        //  Solo campos que EXISTEN en la tabla
         const nuevoProducto = await createProducto({
             nombre,
             descripcion,
@@ -160,10 +160,10 @@ app.post('/api/inventory', authenticateToken, async (req, res) => {
             stock,
             categoria,
             imagen_url
-            // ❌ NO incluir: descripcion_larga, marca, peso, unidad_medida
+            
         });
         
-        console.log('✅ Producto creado:', nuevoProducto);
+        console.log(' Producto creado:', nuevoProducto);
         
         res.json({ 
             success: true, 
@@ -171,12 +171,12 @@ app.post('/api/inventory', authenticateToken, async (req, res) => {
             producto: nuevoProducto 
         });
     } catch (error) {
-        console.error('❌ Error creando producto:', error);
+        console.error(' Error creando producto:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// ✅ PUT - Actualizar producto (CORREGIDO: Solo campos existentes)
+//  PUT - Actualizar producto (CORREGIDO: Solo campos existentes)
 app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -189,10 +189,10 @@ app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
             imagen_url 
         } = req.body;
         
-        console.log('📝 Actualizando producto ID:', id);
-        console.log('📦 Datos recibidos:', req.body);
+        console.log(' Actualizando producto ID:', id);
+        console.log(' Datos recibidos:', req.body);
         
-        // ✅ Solo usar campos que EXISTEN en la tabla (8 campos)
+        //  Solo usar campos existentes en la tabla 
         const productoActualizado = await updateProducto(id, {
             nombre: nombre,
             descripcion: descripcion || '',
@@ -200,10 +200,9 @@ app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
             stock: stock,
             categoria: categoria,
             imagen_url: imagen_url || ''
-            // ❌ NO incluir: descripcion_larga, marca, peso, unidad_medida
         });
         
-        console.log('✅ Producto actualizado:', productoActualizado);
+        console.log(' Producto actualizado:', productoActualizado);
         
         res.json({ 
             success: true, 
@@ -212,7 +211,7 @@ app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error actualizando producto:', error);
+        console.error(' Error actualizando producto:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message 
@@ -220,7 +219,7 @@ app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// ✅ DELETE - Eliminar producto
+//  DELETE - Eliminar producto
 app.delete('/api/inventory/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -350,7 +349,7 @@ app.get('/api/setup-pedidos-tables', async (req, res) => {
   try {
     const { pool } = require('./db');
     
-    console.log('🔧 Creando tablas de pedidos...');
+    console.log(' Creando tablas de pedidos...');
     
     await pool.query(`
       CREATE TABLE IF NOT EXISTS pedidos (
@@ -434,7 +433,7 @@ app.post('/api/pedidos', authenticateToken, async (req, res) => {
 
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('❌ Error creando pedido:', error);
+    console.error(' Error creando pedido:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al crear el pedido: ' + error.message 
@@ -473,7 +472,7 @@ app.get('/api/pedidos/usuario', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo pedidos:', error);
+    console.error(' Error obteniendo pedidos:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al obtener pedidos: ' + error.message 
@@ -509,7 +508,7 @@ app.get('/api/pedidos/all', authenticateToken, requireAdmin, async (req, res) =>
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo todos los pedidos:', error);
+    console.error(' Error obteniendo todos los pedidos:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al obtener pedidos: ' + error.message 
@@ -534,7 +533,7 @@ app.put('/api/pedidos/:id/estado', authenticateToken, requireAdmin, async (req, 
     });
 
   } catch (error) {
-    console.error('❌ Error actualizando estado:', error);
+    console.error(' Error actualizando estado:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al actualizar estado: ' + error.message 
@@ -548,7 +547,7 @@ app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) =
   try {
     const { pool } = require('./db');
     
-    console.log('📊 Solicitando estadísticas para admin...');
+    console.log(' Solicitando estadísticas para admin...');
 
     const productosQuery = await pool.query('SELECT COUNT(*) as total FROM productos');
     const totalProductos = parseInt(productosQuery.rows[0].total);
@@ -565,7 +564,7 @@ app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) =
     );
     const ingresosTotales = parseFloat(ingresosQuery.rows[0].total);
 
-    console.log('✅ Estadísticas calculadas:', {
+    console.log(' Estadísticas calculadas:', {
       totalProductos,
       totalPedidos, 
       totalUsuarios,
@@ -583,7 +582,7 @@ app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) =
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error);
+    console.error(' Error obteniendo estadísticas:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al obtener estadísticas: ' + error.message 
@@ -597,7 +596,7 @@ app.get('/api/debug/tablas', async (req, res) => {
   try {
     const { pool } = require('./db');
     
-    console.log('🔍 Obteniendo información de la base de datos...');
+    console.log(' Obteniendo información de la base de datos...');
     
     const tablasQuery = await pool.query(`
       SELECT table_name 
@@ -607,7 +606,7 @@ app.get('/api/debug/tablas', async (req, res) => {
     `);
     
     const tablas = tablasQuery.rows.map(row => row.table_name);
-    console.log('📊 Tablas encontradas:', tablas);
+    console.log(' Tablas encontradas:', tablas);
     
     const resultado = {};
     
@@ -653,7 +652,7 @@ app.post('/api/auth/create-admin-user', async (req, res) => {
   try {
     const { email = 'superadmin@bodega.com', password = 'admin123', nombre = 'Super Admin' } = req.body;
 
-    console.log('👑 Creando usuario administrador...');
+    console.log(' Creando usuario administrador...');
 
     const nuevoUsuario = await createUser({ 
       email, 
@@ -674,7 +673,7 @@ app.post('/api/auth/create-admin-user', async (req, res) => {
 
     res.json({
       success: true,
-      message: '✅ Usuario ADMINISTRADOR creado exitosamente',
+      message: ' Usuario ADMINISTRADOR creado exitosamente',
       token,
       user: {
         id: nuevoUsuario.id,
@@ -702,7 +701,7 @@ app.post('/api/auth/convert-to-admin', async (req, res) => {
     const { pool } = require('./db');
     const { email = 'admin@bodega.com' } = req.body;
     
-    console.log('👑 Convirtiendo usuario a administrador:', email);
+    console.log(' Convirtiendo usuario a administrador:', email);
     
     const result = await pool.query(
       `UPDATE usuarios SET rol = 'admin' WHERE email = $1 RETURNING id, email, nombre, rol`,
@@ -718,16 +717,16 @@ app.post('/api/auth/convert-to-admin', async (req, res) => {
     
     const usuario = result.rows[0];
     
-    console.log('✅ Usuario convertido a admin:', usuario);
+    console.log(' Usuario convertido a admin:', usuario);
     
     res.json({
       success: true,
-      message: '✅ Usuario convertido a ADMINISTRADOR exitosamente',
+      message: ' Usuario convertido a ADMINISTRADOR exitosamente',
       user: usuario
     });
     
   } catch (error) {
-    console.error('❌ Error convirtiendo usuario:', error);
+    console.error(' Error convirtiendo usuario:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -740,7 +739,7 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
     const { pool } = require('./db');
     const bcrypt = require('bcrypt');
     
-    console.log('🔧 Reseteando contraseña de admin...');
+    console.log(' Reseteando contraseña de admin...');
     
     const newPassword = 'admin123';
     const passwordHash = await bcrypt.hash(newPassword, 10);
@@ -756,11 +755,11 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
     
     const usuario = result.rows[0];
     
-    console.log('✅ Contraseña de admin actualizada');
+    console.log(' Contraseña de admin actualizada');
     
     res.json({
       success: true,
-      message: '✅ Contraseña de ADMIN actualizada exitosamente',
+      message: ' Contraseña de ADMIN actualizada exitosamente',
       user: usuario,
       new_credentials: {
         email: 'admin@bodega.com',
@@ -769,18 +768,18 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error(' Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ==================== 🆕 ENDPOINT PARA REINICIAR PRODUCTOS (CORREGIDO) ====================
+// ====================  ENDPOINT PARA REINICIAR PRODUCTOS (CORREGIDO) ====================
 
 app.post('/api/reset-productos', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { pool } = require('./db');
     
-    console.log('🔄 Reiniciando productos desde db.js...');
+    console.log(' Reiniciando productos desde db.js...');
     
     // 1. Eliminar en orden (para evitar errores de FK)
     await pool.query('DELETE FROM detalle_pedidos');
@@ -792,10 +791,10 @@ app.post('/api/reset-productos', authenticateToken, requireAdmin, async (req, re
     await pool.query('ALTER SEQUENCE pedidos_id_seq RESTART WITH 1');
     await pool.query('ALTER SEQUENCE detalle_pedidos_id_seq RESTART WITH 1');
     
-    // 3. ✅ IMPORTANTE: Usar initDatabase() que YA tiene los 32 productos actualizados en db.js
+    // 3.  IMPORTANTE: Usar initDatabase() que YA tiene los 32 productos actualizados en db.js
     await initDatabase();
     
-    console.log('✅ 32 productos insertados correctamente desde db.js');
+    console.log(' 32 productos insertados correctamente desde db.js');
     
     res.json({
       success: true,
@@ -804,7 +803,7 @@ app.post('/api/reset-productos', authenticateToken, requireAdmin, async (req, re
     });
     
   } catch (error) {
-    console.error('❌ Error reiniciando productos:', error);
+    console.error(' Error reiniciando productos:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -818,7 +817,7 @@ app.post('/api/nuclear-reset', authenticateToken, requireAdmin, async (req, res)
   try {
     const { pool } = require('./db');
     
-    console.log('☢️ REINICIO NUCLEAR de la base de datos...');
+    console.log(' REINICIO NUCLEAR de la base de datos...');
     
     // 1. Eliminar todas las tablas en orden
     await pool.query('DROP TABLE IF EXISTS detalle_pedidos CASCADE');
@@ -826,10 +825,10 @@ app.post('/api/nuclear-reset', authenticateToken, requireAdmin, async (req, res)
     await pool.query('DROP TABLE IF EXISTS productos CASCADE');
     await pool.query('DROP TABLE IF EXISTS usuarios CASCADE');
     
-    console.log('✅ Tablas eliminadas');
+    console.log(' Tablas eliminadas');
     
     // 2. Volver a crear TODO desde cero usando db.js
-    await initDatabase(); // Esto creará productos con las URLs ACTUALIZADAS de db.js
+    await initDatabase(); 
     await initUsuariosTable();
     
     // 3. Crear admin
@@ -841,15 +840,15 @@ app.post('/api/nuclear-reset', authenticateToken, requireAdmin, async (req, res)
       ['admin@bodega.com', passwordHash, 'Administrador', 'admin', true]
     );
     
-    console.log('✅ Base de datos recreada con 32 productos ACTUALIZADOS desde db.js');
+    console.log(' Base de datos recreada con 32 productos ACTUALIZADOS desde db.js');
     
     res.json({
       success: true,
-      message: '✅ Base de datos recreada completamente con URLs actualizadas desde db.js'
+      message: ' Base de datos recreada completamente con URLs actualizadas desde db.js'
     });
     
   } catch (error) {
-    console.error('❌ Error nuclear:', error);
+    console.error(' Error nuclear:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -859,12 +858,12 @@ app.post('/api/nuclear-reset', authenticateToken, requireAdmin, async (req, res)
 
 // ==================== NUEVO ENDPOINT PARA VISTA DETALLE ====================
 
-// 🔧 NUEVO: Endpoint específico para vista detalle
+//  Endpoint específico para vista detalle
 app.get('/api/productos/:id/detalle-completo', async (req, res) => {
   try {
     const { id } = req.params;
     
-    console.log(`🔍 Solicitando detalles completos del producto ID: ${id}`);
+    console.log(` Solicitando detalles completos del producto ID: ${id}`);
     
     const producto = await getProductoById(id);
     
@@ -891,7 +890,7 @@ app.get('/api/productos/:id/detalle-completo', async (req, res) => {
       created_at: producto.created_at
     };
     
-    console.log(`✅ Detalles completos enviados para: ${productoCompleto.nombre}`);
+    console.log(` Detalles completos enviados para: ${productoCompleto.nombre}`);
     
     res.json({
       success: true,
@@ -899,7 +898,7 @@ app.get('/api/productos/:id/detalle-completo', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error obteniendo detalles del producto:', error);
+    console.error(' Error obteniendo detalles del producto:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -911,9 +910,9 @@ app.get('/api/productos/:id/detalle-completo', async (req, res) => {
 
 if (PORT) {
   app.listen(PORT, async () => {
-    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    console.log(` Servidor corriendo en puerto ${PORT}`);
     await initializeDatabase();
   });
 } else {
-  console.error('❌ ERROR: No se especificó el puerto en process.env.PORT');
+  console.error(' ERROR: No se especificó el puerto en process.env.PORT');
 }
