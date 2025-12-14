@@ -8,12 +8,12 @@ const pool = new Pool({
   }
 });
 
-// Función para inicializar la base de datos con datos de prueba
+
 async function initDatabase() {
   try {
     console.log(' Inicializando base de datos PostgreSQL...');
     
-    //Agregar nuevos campos para vista detalle**
+    
     await pool.query(`
       CREATE TABLE IF NOT EXISTS productos (
         id SERIAL PRIMARY KEY,
@@ -31,14 +31,13 @@ async function initDatabase() {
       )
     `);
 
-    // Verificar si ya existen datos
+    
     const result = await pool.query('SELECT COUNT(*) FROM productos');
     const count = parseInt(result.rows[0].count);
 
     if (count === 0) {
       console.log(' Insertando datos de prueba...');
       
-      //Datos completos con descripción_larga, marca, peso, unidad_medida**
       await pool.query(`
         INSERT INTO productos (nombre, descripcion, descripcion_larga, precio, stock, categoria, imagen_url, marca, peso, unidad_medida) VALUES
         ('Arroz Costeño Extra', 'Arroz extra calidad 1kg', 
@@ -176,12 +175,12 @@ async function initDatabase() {
     }
 
   } catch (error) {
-    console.error('❌ Error inicializando base de datos:', error.message);
+    console.error(' Error inicializando base de datos:', error.message);
     throw error;
   }
 }
 
-// FUNCIONES  para incluir nuevos campos**
+
 
 async function getProductos() {
   try {
@@ -235,12 +234,12 @@ async function updateProducto(id, producto) {
     }
 }
 
-// **FUNCIONES PARA MIGRACIÓN **
+
 async function migrarDatosViejosANuevos() {
   try {
     console.log(' Migrando datos a nuevos campos...');
     
-    // Actualizar registros que no tengan los nuevos campos completos
+  
     await pool.query(`
       UPDATE productos 
       SET descripcion_larga = descripcion || '. Producto de alta calidad disponible en Bodega Guadalupe.',
@@ -276,10 +275,9 @@ async function migrarDatosViejosANuevos() {
   }
 }
 
-// Función para inicializar tabla de usuarios 
 async function initUsuariosTable() {
   try {
-    console.log('🔄 Inicializando tabla de usuarios...');
+    console.log(' Inicializando tabla de usuarios...');
     
     await pool.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
@@ -293,14 +291,14 @@ async function initUsuariosTable() {
       )
     `);
 
-    // Verificar si ya existe el usuario admin
+   
     const result = await pool.query('SELECT COUNT(*) FROM usuarios WHERE email = $1', ['admin@bodega.com']);
     const count = parseInt(result.rows[0].count);
 
     if (count === 0) {
       console.log(' Insertando usuario administrador...');
       
-      // Hash de password: Admin123
+      
       const passwordHash = await bcrypt.hash('Admin123', 10);
       
       await pool.query(
@@ -343,7 +341,7 @@ async function createUser(usuario) {
   try {
     const { email, password, nombre, rol = 'cliente' } = usuario;
     
-    // Hash de la contraseña
+   
     const passwordHash = await bcrypt.hash(password, 10);
     
     const result = await pool.query(
