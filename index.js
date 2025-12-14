@@ -16,22 +16,21 @@ const {
 
 const app = express();
 
-// Solo usa el puerto de Render
+
 const PORT = process.env.PORT;
 
-// Middlewares
+
 app.use(cors());
 app.use(express.json());
 
-// JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'bodega_guadalupe_secret_2024';
 
-// CREA USUARIO ADMIN POR DEFECTO AL INICIAR
+
 async function createDefaultAdmin() {
   try {
     const { pool } = require('./db');
     
-    // Verifica si ya existe un admin
+    
     const adminCheck = await pool.query(
       'SELECT id FROM usuarios WHERE rol = $1 LIMIT 1',
       ['admin']
@@ -58,7 +57,7 @@ async function createDefaultAdmin() {
   }
 }
 
-//  Probar conexión al iniciar
+
 async function initializeDatabase() {
   try {
     console.log(' Inicializando conexión a la base de datos...');
@@ -66,7 +65,7 @@ async function initializeDatabase() {
     await initUsuariosTable();
     await createDefaultAdmin();
     
-    // Ejecutar migración de datos viejos a nuevos campos
+   
     await migrarDatosViejosANuevos();
     
     console.log(' Aplicación lista para usar');
@@ -77,7 +76,7 @@ async function initializeDatabase() {
   }
 }
 
-// Middleware para verificar token
+
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -95,7 +94,7 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Middleware para verificar si es admin
+
 const requireAdmin = (req, res, next) => {
   if (req.user && req.user.rol === 'admin') {
     next();
@@ -104,9 +103,9 @@ const requireAdmin = (req, res, next) => {
   }
 };
 
-// ==================== ENDPOINTS PRINCIPALES ====================
 
-//  GET - Obtener todos los productos (NUEVO: Incluye campos completos)
+
+
 app.get('/api/inventory', async (req, res) => {
   try {
     const productos = await getProductos();
@@ -116,7 +115,6 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
-// GET - Obtener producto por ID con todos los detalles
 app.get('/api/inventory/:id/detalles', async (req, res) => {
   try {
     const { id } = req.params;
@@ -138,7 +136,6 @@ app.get('/api/inventory/:id/detalles', async (req, res) => {
   }
 });
 
-//  POST - Crear nuevo producto (CORREGIDO: Solo campos existentes)
 app.post('/api/inventory', authenticateToken, async (req, res) => {
     try {
         const { 
@@ -152,7 +149,7 @@ app.post('/api/inventory', authenticateToken, async (req, res) => {
         
         console.log('➕ Creando nuevo producto:', { nombre, precio, stock, categoria });
         
-        //  Solo campos que EXISTEN en la tabla
+       
         const nuevoProducto = await createProducto({
             nombre,
             descripcion,
@@ -176,7 +173,7 @@ app.post('/api/inventory', authenticateToken, async (req, res) => {
     }
 });
 
-//  PUT - Actualizar producto (CORREGIDO: Solo campos existentes)
+
 app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -192,7 +189,7 @@ app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
         console.log(' Actualizando producto ID:', id);
         console.log(' Datos recibidos:', req.body);
         
-        //  Solo usar campos existentes en la tabla 
+       
         const productoActualizado = await updateProducto(id, {
             nombre: nombre,
             descripcion: descripcion || '',
@@ -219,7 +216,6 @@ app.put('/api/inventory/:id', authenticateToken, async (req, res) => {
     }
 });
 
-//  DELETE - Eliminar producto
 app.delete('/api/inventory/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -236,9 +232,7 @@ app.delete('/api/inventory/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// ==================== AUTENTICACIÓN ====================
 
-// POST - Registro de usuario
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, nombre } = req.body;
@@ -280,7 +274,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// POST - Login de usuario
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -325,7 +318,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// GET - Verificar token
 app.get('/api/auth/verify', authenticateToken, (req, res) => {
   res.json({
     success: true,
@@ -333,7 +325,6 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
   });
 });
 
-// GET - Inicializar tabla de usuarios
 app.get('/api/auth/setup', async (req, res) => {
   try {
     await initUsuariosTable();
@@ -343,7 +334,6 @@ app.get('/api/auth/setup', async (req, res) => {
   }
 });
 
-// ==================== TABLAS DE PEDIDOS ====================
 
 app.get('/api/setup-pedidos-tables', async (req, res) => {
   try {
@@ -391,7 +381,6 @@ app.get('/api/setup-pedidos-tables', async (req, res) => {
   }
 });
 
-// ==================== ENDPOINTS DE PEDIDOS ====================
 
 app.post('/api/pedidos', authenticateToken, async (req, res) => {
   const { pool } = require('./db');
@@ -541,7 +530,6 @@ app.put('/api/pedidos/:id/estado', authenticateToken, requireAdmin, async (req, 
   }
 });
 
-// ==================== ESTADÍSTICAS ====================
 
 app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -590,7 +578,6 @@ app.get('/api/estadisticas', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
-// ==================== DEBUG ====================
 
 app.get('/api/debug/tablas', async (req, res) => {
   try {
@@ -646,7 +633,6 @@ app.get('/api/debug/tablas', async (req, res) => {
   }
 });
 
-// ==================== ADMIN MANAGEMENT ====================
 
 app.post('/api/auth/create-admin-user', async (req, res) => {
   try {
@@ -773,7 +759,6 @@ app.post('/api/auth/reset-admin-password', async (req, res) => {
   }
 });
 
-// ====================  ENDPOINT PARA REINICIAR PRODUCTOS (CORREGIDO) ====================
 
 app.post('/api/reset-productos', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -781,17 +766,14 @@ app.post('/api/reset-productos', authenticateToken, requireAdmin, async (req, re
     
     console.log(' Reiniciando productos desde db.js...');
     
-    // 1. Eliminar en orden (para evitar errores de FK)
     await pool.query('DELETE FROM detalle_pedidos');
     await pool.query('DELETE FROM pedidos');
     await pool.query('DELETE FROM productos');
     
-    // 2. Resetear secuencias
     await pool.query('ALTER SEQUENCE productos_id_seq RESTART WITH 1');
     await pool.query('ALTER SEQUENCE pedidos_id_seq RESTART WITH 1');
     await pool.query('ALTER SEQUENCE detalle_pedidos_id_seq RESTART WITH 1');
     
-    // 3.  IMPORTANTE: Usar initDatabase() que YA tiene los 32 productos actualizados en db.js
     await initDatabase();
     
     console.log(' 32 productos insertados correctamente desde db.js');
@@ -811,7 +793,6 @@ app.post('/api/reset-productos', authenticateToken, requireAdmin, async (req, re
   }
 });
 
-// ==================== 🆕 REINICIO NUCLEAR (OPCIONAL) ====================
 
 app.post('/api/nuclear-reset', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -856,9 +837,7 @@ app.post('/api/nuclear-reset', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
-// ==================== NUEVO ENDPOINT PARA VISTA DETALLE ====================
 
-//  Endpoint específico para vista detalle
 app.get('/api/productos/:id/detalle-completo', async (req, res) => {
   try {
     const { id } = req.params;
@@ -874,7 +853,6 @@ app.get('/api/productos/:id/detalle-completo', async (req, res) => {
       });
     }
     
-    // 🔧 Asegurar que todos los campos existan (compatibilidad hacia atrás)
     const productoCompleto = {
       id: producto.id,
       nombre: producto.nombre || '',
@@ -906,7 +884,6 @@ app.get('/api/productos/:id/detalle-completo', async (req, res) => {
   }
 });
 
-// ==================== INICIAR SERVIDOR ====================
 
 if (PORT) {
   app.listen(PORT, async () => {
